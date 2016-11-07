@@ -29,20 +29,31 @@
 #include "ADCSWTrigger.h"
 #include "uart.h"
 #include "PLL.h"
+#include "ST7735.h"
 
 long StartCritical (void);    // previous I bit, disable interrupts
 void EndCritical(long sr);    // restore I bit to previous value
+void EnableInterrupts(void);
+void DisableInterrupts(void);
 
 void Timer0A_Init(uint32_t period);
 
 int numSamples;
 
 int main(void){
+  DisableInterrupts();
   PLL_Init(Bus80MHz);   // 80 MHz
-  Timer0A_Init(80000);
   UART_Init();              // initialize UART device
-  ADC0_InitSWTriggerSeq3_Ch9();
-  while(1){   
+  ST7735_InitR(INITR_REDTAB);
+  ST7735_DrawString(0,0,"EE445L Thermometer",ST7735_YELLOW);
+  ST7735_DrawString(0,1,"UT Austin-S Ma, E Su",ST7735_YELLOW);
+  ST7735_FillRect(0,32,128,160, ST7735_WHITE);
+  ADC0_InitSWTriggerSeq3_Ch9();  
+  Timer0A_Init(80000);
+
+  EnableInterrupts();
+  while(1){
+      int temp = 0;
   }
 }
 
@@ -63,7 +74,7 @@ void Timer0A_Init(uint32_t period){
     TIMER0_TAPR_R = 0;            // 5) bus clock resolution
     TIMER0_ICR_R = 0x00000001;    // 6) clear TIMER0A timeout flag
     TIMER0_IMR_R = 0x00000001;    // 7) arm timeout interrupt
-    NVIC_PRI4_R = (NVIC_PRI4_R&0x00FFFFFF)|0x80000000; // 8) priority 4
+    NVIC_PRI4_R = (NVIC_PRI4_R&0x00FFFFFF)|0xA0000000; // 8) priority 4
     // interrupts enabled in the main program after all devices initialized
     // vector number 35, interrupt number 19
     NVIC_EN0_R = 1<<19;           // 9) enable IRQ 19 in NVIC
@@ -72,6 +83,7 @@ void Timer0A_Init(uint32_t period){
 }
 
 void Timer0A_Handler(void) {
+    TIMER0_ICR_R = TIMER_ICR_TATOCINT;
     int32_t data = ADC0_InSeq3();
     // Output to FIFO
 }
