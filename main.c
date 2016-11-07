@@ -28,6 +28,7 @@
 #include "../inc/tm4c123gh6pm.h"
 #include "ADCSWTrigger.h"
 #include "uart.h"
+#include "FIFO.h"
 #include "PLL.h"
 #include "ST7735.h"
 
@@ -36,6 +37,7 @@ void EndCritical(long sr);    // restore I bit to previous value
 void EnableInterrupts(void);
 void DisableInterrupts(void);
 
+void Delay1ms(uint32_t);
 void Timer0A_Init(uint32_t period);
 
 int numSamples;
@@ -50,7 +52,8 @@ int main(void){
   ST7735_FillRect(0,32,128,160, ST7735_WHITE);
   ADC0_InitSWTriggerSeq3_Ch9();  
   Timer0A_Init(80000);
-
+  RxFifo_Init();
+  Delay1ms(500);
   EnableInterrupts();
   while(1){
       int temp = 0;
@@ -86,5 +89,6 @@ void Timer0A_Handler(void) {
     TIMER0_ICR_R = TIMER_ICR_TATOCINT;
     int32_t data = ADC0_InSeq3();
     // Output to FIFO
+    RxFifo_Put(data);
 }
 
