@@ -6,14 +6,14 @@
 // implementation.  Other index or pointer implementation FIFOs can be
 // created using the macros supplied at the end of the file.
 // Daniel Valvano
-// June 16, 2011
+// May 2, 2015
 
 /* This example accompanies the book
-   "Embedded Systems: Real Time Interfacing to the Arm Cortex M3",
-   ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2011
+   "Embedded Systems: Real Time Interfacing to Arm Cortex M Microcontrollers",
+   ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2015
       Programs 3.7, 3.8., 3.9 and 3.10 in Section 3.7
 
- Copyright 2011 by Jonathan W. Valvano, valvano@mail.utexas.edu
+ Copyright 2015 by Jonathan W. Valvano, valvano@mail.utexas.edu
     You may use, edit, run or distribute this file
     as long as the above copyright notice remains
  THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
@@ -27,7 +27,6 @@
 
 #ifndef __FIFO_H__
 #define __FIFO_H__
-#include <stdint.h>
 
 long StartCritical (void);    // previous I bit, disable interrupts
 void EndCritical(long sr);    // restore I bit to previous value
@@ -37,7 +36,7 @@ void EndCritical(long sr);    // restore I bit to previous value
 #define TXFIFOSIZE 16 // must be a power of 2
 #define TXFIFOSUCCESS 1
 #define TXFIFOFAIL    0
-typedef char txDataType;
+typedef int32_t txDataType;
 
 // initialize index FIFO
 void TxFifo_Init(void);
@@ -63,10 +62,10 @@ typedef char rxDataType;
 void RxFifo_Init(void);
 // add element to end of pointer FIFO
 // return RXFIFOSUCCESS if successful
-int RxFifo_Put(int32_t data);
+int RxFifo_Put(rxDataType data);
 // remove element from front of pointer FIFO
 // return RXFIFOSUCCESS if successful
-int32_t RxFifo_Get(void);
+int RxFifo_Get(rxDataType *datapt);
 // number of elements in pointer FIFO
 // 0 to RXFIFOSIZE-1
 uint32_t RxFifo_Size(void);

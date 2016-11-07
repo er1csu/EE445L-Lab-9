@@ -6,14 +6,14 @@
 // implementation.  Other index or pointer implementation FIFOs can be
 // created using the macros supplied at the end of the file.
 // Daniel Valvano
-// July 29, 2014
+// May 2, 2015
 
 /* This example accompanies the book
    "Embedded Systems: Real Time Interfacing to ARM Cortex M Microcontrollers",
-   ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2014
+   ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2015
    Programs 3.7, 3.8., 3.9 and 3.10 in Section 3.7
 
- Copyright 2014 by Jonathan W. Valvano, valvano@mail.utexas.edu
+ Copyright 2015 by Jonathan W. Valvano, valvano@mail.utexas.edu
     You may use, edit, run or distribute this file
     as long as the above copyright notice remains
  THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
@@ -67,7 +67,6 @@ uint32_t TxFifo_Size(void){
  return ((uint32_t)(TxPutI-TxGetI));
 }
 
-// ********************************************************************************
 // Two-pointer implementation of the receive FIFO
 // can hold 0 to RXFIFOSIZE-1 elements
 
@@ -83,7 +82,7 @@ void RxFifo_Init(void){ long sr;
 }
 // add element to end of pointer FIFO
 // return RXFIFOSUCCESS if successful
-int RxFifo_Put(int32_t data){
+int RxFifo_Put(rxDataType data){
   rxDataType volatile *nextPutPt;
   nextPutPt = RxPutPt+1;
   if(nextPutPt == &RxFifo[RXFIFOSIZE]){
@@ -100,14 +99,15 @@ int RxFifo_Put(int32_t data){
 }
 // remove element from front of pointer FIFO
 // return RXFIFOSUCCESS if successful
-int32_t RxFifo_Get(){
+int RxFifo_Get(rxDataType *datapt){
   if(RxPutPt == RxGetPt ){
     return(RXFIFOFAIL);      // Empty if PutPt=GetPt
   }
+  *datapt = *(RxGetPt++);
   if(RxGetPt == &RxFifo[RXFIFOSIZE]){
      RxGetPt = &RxFifo[0];   // wrap
   }
-  return *(RxGetPt++);
+  return(RXFIFOSUCCESS);
 }
 // number of elements in pointer FIFO
 // 0 to RXFIFOSIZE-1

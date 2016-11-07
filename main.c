@@ -30,6 +30,7 @@
 #include "uart.h"
 #include "FIFO.h"
 #include "PLL.h"
+#include "data.h"
 #include "ST7735.h"
 
 long StartCritical (void);    // previous I bit, disable interrupts
@@ -39,6 +40,7 @@ void DisableInterrupts(void);
 
 void Delay1ms(uint32_t);
 void Timer0A_Init(uint32_t period);
+void printTemp(int32_t i);
 
 int numSamples;
 
@@ -48,16 +50,53 @@ int main(void){
   UART_Init();              // initialize UART device
   ST7735_InitR(INITR_REDTAB);
   ST7735_DrawString(0,0,"EE445L Thermometer",ST7735_YELLOW);
-  ST7735_DrawString(0,1,"UT Austin-S Ma, E Su",ST7735_YELLOW);
+  ST7735_DrawString(0,2,"UT Austin-S Ma, E Su",ST7735_YELLOW);
+  ST7735_DrawString(0,1,"T= ",ST7735_YELLOW);
   ST7735_FillRect(0,32,128,160, ST7735_WHITE);
   ADC0_InitSWTriggerSeq3_Ch9();  
   Timer0A_Init(80000);
-  RxFifo_Init();
+  TxFifo_Init();
   Delay1ms(500);
   EnableInterrupts();
+  int xd = 0;
+  int cnt = 0;
+  int32_t tmp[1];
   while(1){
-      int temp = 0;
+    
+      TxFifo_Get(tmp);
+      //cnt ++;
+      //xd += tmp[0];
+      //if (cnt == 20) {
+        printTemp(tmp[0]);
+        //xd = 0;
+        //cnt = 0;
+      //}
+      //printTemp(2250);
+      //Delay1ms(100);
   }
+}
+
+void printTemp(int32_t i) {
+    int index = 0;
+    double slope = 0.0;
+    while (i > ADCdata[index]) {
+        index++;
+    }
+    slope = ((double)(Tdata[index]-Tdata[index-1]))/((double)(ADCdata[index]-ADCdata[index-1]));
+    double b = Tdata[index] - slope*ADCdata[index];
+    int fixpt = (int)(slope*i)+ b;
+    char str[6] = "00.0 C";
+    int32_t divisor = 1000;
+    if (fixpt > 1000) {
+      str[0] = fixpt/divisor+48;
+    }
+    fixpt %= divisor;
+    divisor /= 10;
+    str[1] = fixpt/divisor+48;
+    fixpt %= divisor;
+    divisor /= 10;
+    str[3] = fixpt/divisor+48;
+    ST7735_DrawString(3,1,str,ST7735_YELLOW);
 }
 
 // ***************** Timer0A_Init ****************
@@ -89,6 +128,6 @@ void Timer0A_Handler(void) {
     TIMER0_ICR_R = TIMER_ICR_TATOCINT;
     int32_t data = ADC0_InSeq3();
     // Output to FIFO
-    RxFifo_Put(data);
+    TxFifo_Put(data);
 }
 
