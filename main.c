@@ -28,11 +28,12 @@
 #include "../inc/tm4c123gh6pm.h"
 #include "ADCSWTrigger.h"
 #include "uart.h"
+#include "FIFO.h"
 #include "PLL.h"
 
 long StartCritical (void);    // previous I bit, disable interrupts
 void EndCritical(long sr);    // restore I bit to previous value
-
+void Delay1ms(uint32_t);
 void Timer0A_Init(uint32_t period);
 
 int numSamples;
@@ -42,7 +43,10 @@ int main(void){
   Timer0A_Init(80000);
   UART_Init();              // initialize UART device
   ADC0_InitSWTriggerSeq3_Ch9();
-  while(1){   
+  RxFifo_Init();
+  Delay1ms(500);
+  while(1){
+      
   }
 }
 
@@ -74,5 +78,6 @@ void Timer0A_Init(uint32_t period){
 void Timer0A_Handler(void) {
     int32_t data = ADC0_InSeq3();
     // Output to FIFO
+    RxFifo_Put(data);
 }
 
