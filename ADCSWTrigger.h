@@ -54,13 +54,17 @@
 // Sequencer 3 priority: 4th (lowest)
 // SS3 triggering event: software trigger
 // SS3 1st sample source: Ain9 (PE4)
-// SS3 interrupts: enabled but not promoted to controller
+// SS3 interrupts: enabled but not promoted to controllervoid
+//void ADC0_InitTimer0ATriggerSeq3PD3(uint32_t period);
+
 void ADC0_InitSWTriggerSeq3_Ch9(void);
-
-
 
 //------------ADC0_InSeq3------------
 // Busy-wait Analog to digital conversion
 // Input: none
 // Output: 12-bit result of ADC conversion
 uint32_t ADC0_InSeq3(void);
+
+//extern int mailbox;
+
+//extern int flag;

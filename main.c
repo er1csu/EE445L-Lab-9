@@ -28,6 +28,7 @@
 #include "../inc/tm4c123gh6pm.h"
 #include "ADCSWTrigger.h"
 #include "uart.h"
+#include "calib.h"
 #include "FIFO.h"
 #include "PLL.h"
 #include "data.h"
@@ -41,51 +42,69 @@ void DisableInterrupts(void);
 void Delay1ms(uint32_t);
 void Timer0A_Init(uint32_t period);
 void printTemp(int32_t i);
+int getFixPt(int i);
 
 int numSamples;
+int flag = 0;
+//int mailbox = 0;
 
 int main(void){
   DisableInterrupts();
   PLL_Init(Bus80MHz);   // 80 MHz
-  UART_Init();              // initialize UART device
+  //UART_Init();              // initialize UART device
   ST7735_InitR(INITR_REDTAB);
   ST7735_DrawString(0,0,"EE445L Thermometer",ST7735_YELLOW);
   ST7735_DrawString(0,2,"UT Austin-S Ma, E Su",ST7735_YELLOW);
   ST7735_DrawString(0,1,"T= ",ST7735_YELLOW);
-  ST7735_FillRect(0,32,128,160, ST7735_WHITE);
-  ADC0_InitSWTriggerSeq3_Ch9();  
-  Timer0A_Init(80000);
+  //ST7735_FillRect(0,32,128,160, ST7735_WHITE);
+  ST7735_PlotClear(1000,4000);
+  ADC0_InitSWTriggerSeq3_Ch9();
+  //ADC0_InitTimer0ATriggerSeq3PD3(800000); 
+  Timer0A_Init(800000);
   TxFifo_Init();
-  Delay1ms(500);
+ // Delay1ms(500);
   EnableInterrupts();
-  int xd = 0;
+  int32_t data[1];
+  int N = 4;
+  int j = 0;
   int cnt = 0;
-  int32_t tmp[1];
+  int largeRaw = 0;
+  int largeTemp = 0;
   while(1){
-    
-      TxFifo_Get(tmp);
-      //cnt ++;
-      //xd += tmp[0];
-      //if (cnt == 20) {
-        printTemp(tmp[0]);
-        //xd = 0;
-        //cnt = 0;
-      //}
-      //printTemp(2250);
-      //Delay1ms(100);
-  }
-}
-
-void printTemp(int32_t i) {
-    int index = 0;
-    double slope = 0.0;
-    while (i > ADCdata[index]) {
-        index++;
+     // if (flag == 1) {
+       // flag = 0;
+      int okay = TxFifo_Get(data);
+    if (!okay) {
+      continue;
+    }cnt +=1;
+    //largeRaw+=data[0];
+//        data[0] = mailbox;
+        //data[0] = mailbox;
+      int temperature =getFixPt(data[0]); 
+      largeTemp += temperature+offset;
+      //UART_OutUDec(temperature);
+      //UART_OutChar(' ');
+      if (cnt == 10)
+      {
+        cnt =0;
+        temperature = largeTemp/10;
+        largeTemp = 0;
+        ST7735_PlotPoint(temperature);
+      if ((j&(N-1))==0) {
+        ST7735_PlotNextErase();
+      }
+      if ((j%100)==0) {
+         printTemp(temperature);
+      }
+      j = (j+1)%2100000000;
     }
-    slope = ((double)(Tdata[index]-Tdata[index-1]))/((double)(ADCdata[index]-ADCdata[index-1]));
-    double b = Tdata[index] - slope*ADCdata[index];
-    int fixpt = (int)(slope*i)+ b;
-    char str[6] = "00.0 C";
+    }
+  //}
+  }
+
+void printTemp(int32_t fixpt) {
+    
+    char str[7] = "00.00 C";
     int32_t divisor = 1000;
     if (fixpt > 1000) {
       str[0] = fixpt/divisor+48;
@@ -96,7 +115,21 @@ void printTemp(int32_t i) {
     fixpt %= divisor;
     divisor /= 10;
     str[3] = fixpt/divisor+48;
+    fixpt %= divisor;
+    divisor /= 10;
+    str[4] = fixpt/divisor+48;
     ST7735_DrawString(3,1,str,ST7735_YELLOW);
+}
+
+int getFixPt(int i) {
+    int index = 0;
+    double slope = 0.0;
+    while (i > ADCdata[index]) {
+        index++;
+    }
+    slope = ((double)(Tdata[index]-Tdata[index-1]))/((double)(ADCdata[index]-ADCdata[index-1]));
+    double b = Tdata[index] - slope*ADCdata[index];
+    return (int)(slope*i)+ b;
 }
 
 // ***************** Timer0A_Init ****************
@@ -127,7 +160,9 @@ void Timer0A_Init(uint32_t period){
 void Timer0A_Handler(void) {
     TIMER0_ICR_R = TIMER_ICR_TATOCINT;
     int32_t data = ADC0_InSeq3();
+    //flag = 1;
     // Output to FIFO
     TxFifo_Put(data);
+    //mailbox = data;
 }
 
